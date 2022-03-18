@@ -1,0 +1,88 @@
+import lombok.var;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
+/*********************************
+ @Author:xiaoyan.qin
+ @Description:
+ @Date:Created in 15:48 2022/3/16
+ @Modified By:
+ **********************************/
+public class MainThreadlocal {
+    public static void main(String[] args) throws Exception {
+        ExecutorService es = Executors.newFixedThreadPool(3);
+        String[] users = new String[] { "Bob", "Alice", "Tim", "Mike", "Lily", "Jack", "Bush" };
+        for (String user : users) {
+            es.submit(new Taskk(user));
+        }
+        es.awaitTermination(3, TimeUnit.SECONDS);
+        es.shutdown();
+    }
+}
+
+class Taskk implements Runnable {
+    final String username;
+    public Taskk(String username){
+        this.username = username;
+    }
+    @Override
+    public void run(){
+        try (var ctx = new UserContext(this.username)){
+            new Task1().process();
+            new Task22().process();
+            new Task3().process();
+        }
+    }
+
+}
+class Task1 {
+    public void process() {
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException e) {
+        }
+        System.out.printf("[%s] check user %s...\n", Thread.currentThread().getName(), UserContext.getCurrentUser());
+    }
+}
+
+class Task22 {
+    public void process() {
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException e) {
+        }
+        System.out.printf("[%s] %s registered ok.\n", Thread.currentThread().getName(), UserContext.getCurrentUser());
+    }
+}
+
+class Task3 {
+    public void process() {
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException e) {
+        }
+        System.out.printf("[%s] work of %s has done.\n", Thread.currentThread().getName(),
+                UserContext.getCurrentUser());
+    }
+}
+class UserContext implements AutoCloseable {
+    private static final ThreadLocal<String> userThreadLocal = new ThreadLocal<>();
+
+    public UserContext(String name) {
+        userThreadLocal.set(name);
+        System.out.printf("[%s] init user %s...\n", Thread.currentThread().getName(), UserContext.getCurrentUser());
+    }
+
+    public static String getCurrentUser() {
+        return userThreadLocal.get();
+    }
+
+    @Override
+    public void close() {
+        System.out.printf("[%s] cleanup for user %s...\n", Thread.currentThread().getName(),
+                UserContext.getCurrentUser());
+        userThreadLocal.remove();
+    }
+}
