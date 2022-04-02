@@ -61,56 +61,52 @@ public class TestSlot {
 }
 
 
-
 class AsyncRedis extends RichAsyncFunction<String, String> {
-  private RedisAsyncCommands<String, String> async;
-  private String url;
-  private StatefulRedisConnection<String, String> connection;
-  private RedisClient redisClient;
-  public AsyncRedis(String url) {
-    this.url = url;
-  }
-  @Override
-  public void open(Configuration parameters) throws Exception {
-    redisClient = RedisClient.create(url);
-    connection = redisClient.connect();
-    async = connection.async();
+    private RedisAsyncCommands<String, String> async;
+    private String url;
+    private StatefulRedisConnection<String, String> connection;
+    private RedisClient redisClient;
+    public AsyncRedis(String url) {
+        this.url = url;
+    }
+    @Override
+    public void open(Configuration parameters) throws Exception {
+        redisClient = RedisClient.create(url);
+        connection = redisClient.connect();
+        async = connection.async();
 
-  }
+    }
+    @Override
+    public void asyncInvoke(String input, final ResultFuture<String> resultFuture) throws Exception {
+        // query string
+        // System.out.println(redisFuture.get().toString());
+        // query hash
+        // async query and get result
 
-
-
-  @Override
-  public void asyncInvoke(String input, final ResultFuture<String> resultFuture) throws Exception {
-    // query string
-
-
-   // System.out.println(redisFuture.get().toString());
-    // query hash
-    // async query and get result
-
-    // return result
-    CompletableFuture.supplyAsync(
-            () -> {
-              try {
-                String imei = JSON.parseObject(input).get("imei").toString();
-                RedisFuture<String> redisFuture = async.hget("DC_IMEI_APPID",imei);
-                return redisFuture.get();
-              } catch (ExecutionException e) {
-                e.printStackTrace();
-              } catch (InterruptedException e) {
-                e.printStackTrace();
-              }
-              return "exception";
-            })
-        .thenAccept(result -> {
-          if (result == null){
-            result = "nothing";
-          }
-          resultFuture.complete(Collections.singleton(input + "-" + result));
-        }
-        );
-  }
+        // return result
+        CompletableFuture.supplyAsync(
+                        () -> {
+                            try {
+                                String imei = JSON.parseObject(input).get("imei").toString();
+                                RedisFuture<String> redisFuture = async.hget("DC_IMEI_APPID",imei);
+                                return redisFuture.get();
+                            } catch (ExecutionException e) {
+                                e.printStackTrace();
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                            return "exception";
+                        })
+                .thenAccept(result -> {
+                            if (result == null){
+                                result = "nothing";
+                            }
+                            //     resultFuture.complete(Collections.singleton(input + "-" + result));
+                            resultFuture.complete(Collections.singleton( JSON.parseObject(result).get("userId").toString()));
+                        }
+                );
+    }
 
 
-  }
+}
+
